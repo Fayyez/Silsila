@@ -1,2 +1,2 @@
 # Silsila
-Ultimate PQC peer2peer file sharing app
+Ultimate PQC file sharing app built with flask.
