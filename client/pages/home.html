@@ -1,0 +1,731 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quantum-Safe File Sharing</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --secondary: #8b5cf6;
+            --success: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --bg-dark: #0f172a;
+            --bg-card: #1e293b;
+            --bg-hover: #334155;
+            --text: #f1f5f9;
+            --text-muted: #94a3b8;
+            --border: #334155;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: linear-gradient(135deg, var(--bg-dark) 0%, #1a202c 100%);
+            color: var(--text);
+            min-height: 100vh;
+            padding: 2rem;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.5rem;
+        }
+
+        .subtitle {
+            color: var(--text-muted);
+            font-size: 1rem;
+        }
+
+        .login-card {
+            background: var(--bg-card);
+            border-radius: 1rem;
+            padding: 2rem;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3);
+            max-width: 400px;
+            margin: 0 auto;
+        }
+
+        .main-content {
+            display: none;
+        }
+
+        .main-content.active {
+            display: block;
+        }
+
+        .card {
+            background: var(--bg-card);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.2);
+            margin-bottom: 1.5rem;
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .card-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .input-group {
+            margin-bottom: 1rem;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: var(--text-muted);
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+
+        input[type="text"],
+        input[type="file"],
+        select {
+            width: 100%;
+            padding: 0.75rem;
+            background: var(--bg-dark);
+            border: 1px solid var(--border);
+            border-radius: 0.5rem;
+            color: var(--text);
+            font-size: 1rem;
+            transition: all 0.3s;
+        }
+
+        input:focus,
+        select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 0.5rem;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px -5px rgba(99, 102, 241, 0.5);
+        }
+
+        .btn-success {
+            background: var(--success);
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #059669;
+        }
+
+        .btn-danger {
+            background: var(--danger);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #dc2626;
+        }
+
+        .btn-small {
+            padding: 0.5rem 1rem;
+            font-size: 0.875rem;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .status-online {
+            background: rgba(16, 185, 129, 0.2);
+            color: var(--success);
+        }
+
+        .status-connected {
+            background: rgba(99, 102, 241, 0.2);
+            color: var(--primary);
+        }
+
+        .client-item {
+            background: var(--bg-dark);
+            padding: 1rem;
+            border-radius: 0.5rem;
+            margin-bottom: 0.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.3s;
+        }
+
+        .client-item:hover {
+            background: var(--bg-hover);
+        }
+
+        .transfer-item {
+            background: var(--bg-dark);
+            padding: 1rem;
+            border-radius: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .transfer-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+
+        .transfer-actions {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 0.75rem;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 0.5rem;
+            background: var(--bg-dark);
+            border-radius: 9999px;
+            overflow: hidden;
+            margin-top: 0.5rem;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary) 0%, var(--secondary) 100%);
+            transition: width 0.3s;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 3rem 1rem;
+            color: var(--text-muted);
+        }
+
+        .empty-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+
+        .file-info {
+            font-size: 0.875rem;
+            color: var(--text-muted);
+            margin-top: 0.25rem;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem;
+            background: var(--bg-card);
+            border-radius: 0.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .user-avatar {
+            width: 3rem;
+            height: 3rem;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+
+        .refresh-btn {
+            background: var(--bg-hover);
+            color: var(--text);
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            border: 1px solid var(--border);
+            cursor: pointer;
+            font-size: 0.875rem;
+            transition: all 0.3s;
+        }
+
+        .refresh-btn:hover {
+            background: var(--bg-dark);
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .spinning {
+            animation: spin 1s linear infinite;
+        }
+
+        .notification {
+            position: fixed;
+            top: 2rem;
+            right: 2rem;
+            background: var(--bg-card);
+            padding: 1rem 1.5rem;
+            border-radius: 0.5rem;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
+            display: none;
+            z-index: 1000;
+        }
+
+        .notification.show {
+            display: block;
+            animation: slideIn 0.3s;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        .download-path-input {
+            display: none;
+        }
+
+        .download-path-input.show {
+            display: block;
+            margin-top: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Quantum-Safe File Sharing</h1>
+            <p class="subtitle">Secure peer-to-peer file transfer with post-quantum cryptography</p>
+        </header>
+
+        <!-- Login Card -->
+        <div class="login-card" id="loginCard">
+            <h2 style="margin-bottom: 1.5rem;">Connect to Network</h2>
+            <div class="input-group">
+                <label for="clientId">Your Client ID</label>
+                <input type="text" id="clientId" placeholder="Enter a unique ID (e.g., alice, bob)" autocomplete="off">
+            </div>
+            <button class="btn btn-primary" onclick="register()" style="width: 100%;">
+                Connect
+            </button>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content" id="mainContent">
+            <!-- User Info -->
+            <div class="user-info">
+                <div class="user-avatar" id="userAvatar">A</div>
+                <div style="flex: 1;">
+                    <div style="font-weight: 600; font-size: 1.125rem;" id="userName">Client Name</div>
+                    <div style="color: var(--text-muted); font-size: 0.875rem;">
+                        <span class="status-badge status-connected">Connected</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid">
+                <!-- Send File Section -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Send File</h3>
+                        <button class="refresh-btn" onclick="refreshClients()">
+                            <span id="refreshIcon">🔄</span> Refresh
+                        </button>
+                    </div>
+                    
+                    <div class="input-group">
+                        <label for="recipientSelect">Select Recipient</label>
+                        <select id="recipientSelect">
+                            <option value="">Loading...</option>
+                        </select>
+                    </div>
+
+                    <div class="input-group">
+                        <label for="fileInput">Choose File</label>
+                        <input type="file" id="fileInput">
+                    </div>
+
+                    <button class="btn btn-primary" onclick="sendFile()" style="width: 100%;">
+                        Send File
+                    </button>
+
+                    <!-- Active Uploads -->
+                    <div id="uploadsSection" style="margin-top: 1.5rem; display: none;">
+                        <h4 style="margin-bottom: 0.75rem; color: var(--text-muted); font-size: 0.875rem;">Active Uploads</h4>
+                        <div id="uploadsList"></div>
+                    </div>
+                </div>
+
+                <!-- Receive Files Section -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">📥 Incoming Files</h3>
+                        <span class="status-badge status-online">Listening</span>
+                    </div>
+
+                    <div id="pendingList">
+                        <div class="empty-state">
+                            <div class="empty-icon">📭</div>
+                            <p>No pending transfers</p>
+                        </div>
+                    </div>
+
+                    <!-- Active Downloads -->
+                    <div id="downloadsSection" style="margin-top: 1.5rem; display: none;">
+                        <h4 style="margin-bottom: 0.75rem; color: var(--text-muted); font-size: 0.875rem;">Active Downloads</h4>
+                        <div id="downloadsList"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification -->
+    <div class="notification" id="notification">
+        <span id="notificationText"></span>
+    </div>
+
+    <script>
+        let clientId = null;
+
+        async function register() {
+            const id = document.getElementById('clientId').value.trim();
+            
+            if (!id) {
+                showNotification('Please enter a client ID');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ client_id: id })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    clientId = id;
+                    document.getElementById('loginCard').style.display = 'none';
+                    document.getElementById('mainContent').classList.add('active');
+                    document.getElementById('userName').textContent = id;
+                    document.getElementById('userAvatar').textContent = id[0].toUpperCase();
+                    
+                    showNotification('Connected successfully!');
+                    
+                    // Start polling
+                    refreshClients();
+                    startPolling();
+                } else {
+                    showNotification(data.error || 'Connection failed');
+                }
+            } catch (error) {
+                showNotification('Error connecting to server');
+                console.error(error);
+            }
+        }
+
+        async function refreshClients() {
+            const icon = document.getElementById('refreshIcon');
+            icon.classList.add('spinning');
+
+            try {
+                const response = await fetch('/api/clients');
+                const data = await response.json();
+
+                const select = document.getElementById('recipientSelect');
+                select.innerHTML = '';
+
+                if (data.clients.length === 0) {
+                    select.innerHTML = '<option value="">No clients online</option>';
+                } else {
+                    select.innerHTML = '<option value="">Select a recipient</option>';
+                    data.clients.forEach(client => {
+                        const option = document.createElement('option');
+                        option.value = client.id;
+                        option.textContent = `${client.id} (${client.status})`;
+                        select.appendChild(option);
+                    });
+                }
+            } catch (error) {
+                console.error('Error fetching clients:', error);
+            } finally {
+                setTimeout(() => icon.classList.remove('spinning'), 500);
+            }
+        }
+
+        async function sendFile() {
+            const recipientId = document.getElementById('recipientSelect').value;
+            const fileInput = document.getElementById('fileInput');
+            const file = fileInput.files[0];
+
+            if (!recipientId) {
+                showNotification('Please select a recipient');
+                return;
+            }
+
+            if (!file) {
+                showNotification('Please select a file');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('recipient_id', recipientId);
+
+            try {
+                const response = await fetch('/api/send', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    showNotification(`Sending ${file.name} to ${recipientId}...`);
+                    fileInput.value = '';
+                } else {
+                    showNotification(data.error || 'Failed to send file');
+                }
+            } catch (error) {
+                showNotification('Error sending file');
+                console.error(error);
+            }
+        }
+
+        async function acceptTransfer(token) {
+            // Get custom download path if provided
+            const pathInput = document.getElementById(`path-${token}`);
+            const downloadPath = pathInput ? pathInput.value : '';
+
+            try {
+                const response = await fetch('/api/accept', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ token, download_path: downloadPath || undefined })
+                });
+
+                if (response.ok) {
+                    showNotification('Download started...');
+                } else {
+                    showNotification('Failed to accept transfer');
+                }
+            } catch (error) {
+                showNotification('Error accepting transfer');
+                console.error(error);
+            }
+        }
+
+        async function rejectTransfer(token) {
+            try {
+                const response = await fetch('/api/reject', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ token })
+                });
+
+                if (response.ok) {
+                    showNotification('Transfer rejected');
+                }
+            } catch (error) {
+                console.error(error);
+            }
+        }
+
+        function togglePathInput(token) {
+            const input = document.getElementById(`path-input-${token}`);
+            input.classList.toggle('show');
+        }
+
+        async function updatePending() {
+            try {
+                const response = await fetch('/api/pending');
+                const data = await response.json();
+
+                const list = document.getElementById('pendingList');
+
+                if (data.transfers.length === 0) {
+                    list.innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-icon">📭</div>
+                            <p>No pending transfers</p>
+                        </div>
+                    `;
+                } else {
+                    list.innerHTML = data.transfers.map(t => `
+                        <div class="transfer-item">
+                            <div class="transfer-header">
+                                <div>
+                                    <div style="font-weight: 600;">${t.filename}</div>
+                                    <div class="file-info">From: ${t.sender_id} • ${formatBytes(t.filesize)}</div>
+                                </div>
+                            </div>
+                            <div class="transfer-actions">
+                                <button class="btn btn-success btn-small" onclick="acceptTransfer('${t.token}')">
+                                    Accept
+                                </button>
+                                <button class="btn btn-danger btn-small" onclick="rejectTransfer('${t.token}')">
+                                    Reject
+                                </button>
+                                <button class="btn btn-small refresh-btn" onclick="togglePathInput('${t.token}')">
+                                    📁 Choose Location
+                                </button>
+                            </div>
+                            <div class="download-path-input" id="path-input-${t.token}">
+                                <input type="text" id="path-${t.token}" placeholder="Enter custom download path (optional)" style="margin-top: 0.5rem;">
+                            </div>
+                        </div>
+                    `).join('');
+                }
+            } catch (error) {
+                console.error('Error updating pending:', error);
+            }
+        }
+
+        async function updateUploads() {
+            try {
+                const response = await fetch('/api/uploads/status');
+                const data = await response.json();
+
+                const section = document.getElementById('uploadsSection');
+                const list = document.getElementById('uploadsList');
+
+                if (data.uploads.length === 0) {
+                    section.style.display = 'none';
+                } else {
+                    section.style.display = 'block';
+                    list.innerHTML = data.uploads.map(u => `
+                        <div class="transfer-item">
+                            <div style="font-weight: 600;">${u.filename}</div>
+                            <div class="file-info">${formatBytes(u.bytes_sent)} / ${formatBytes(u.total_bytes)}</div>
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: ${u.progress}%"></div>
+                            </div>
+                        </div>
+                    `).join('');
+                }
+            } catch (error) {
+                console.error('Error updating uploads:', error);
+            }
+        }
+
+        async function updateDownloads() {
+            try {
+                const response = await fetch('/api/downloads/status');
+                const data = await response.json();
+
+                const section = document.getElementById('downloadsSection');
+                const list = document.getElementById('downloadsList');
+
+                if (data.downloads.length === 0) {
+                    section.style.display = 'none';
+                } else {
+                    section.style.display = 'block';
+                    list.innerHTML = data.downloads.map(d => {
+                        let statusText = d.status === 'downloading' ? '⬇️ Downloading' : 
+                                       d.status === 'decrypting' ? '🔓 Decrypting' :
+                                       d.status === 'complete' ? '✅ Complete' : '❌ Error';
+                        
+                        return `
+                            <div class="transfer-item">
+                                <div style="font-weight: 600;">${d.filename}</div>
+                                <div class="file-info">${statusText} • ${formatBytes(d.bytes_received)} / ${formatBytes(d.total_bytes)}</div>
+                                ${d.status === 'downloading' ? `
+                                    <div class="progress-bar">
+                                        <div class="progress-fill" style="width: ${d.progress}%"></div>
+                                    </div>
+                                ` : ''}
+                            </div>
+                        `;
+                    }).join('');
+                }
+            } catch (error) {
+                console.error('Error updating downloads:', error);
+            }
+        }
+
+        function startPolling() {
+            setInterval(updatePending, 1000);
+            setInterval(updateUploads, 500);
+            setInterval(updateDownloads, 500);
+        }
+
+        function formatBytes(bytes) {
+            if (bytes === 0) return '0 B';
+            const k = 1024;
+            const sizes = ['B', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        function showNotification(text) {
+            const notification = document.getElementById('notification');
+            document.getElementById('notificationText').textContent = text;
+            notification.classList.add('show');
+            
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
+
