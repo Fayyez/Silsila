@@ -23,7 +23,7 @@ SERVER_PORT = 5000
 def register():
     """
     Registers a client with the server.
-    Expected JSON: { "client_id": str, "ip_address": str }
+    Expected JSON: { "client_id": str, "ip_address": str, "socket_number": str (optional) }
     """
     data = request.get_json()
     
@@ -32,12 +32,19 @@ def register():
     
     client_id = data['client_id']
     ip_address = data['ip_address']
+    socket_number = data.get('socket_number')
     
-    registry.register_client(client_id, ip_address)
+    # If socket_number not provided, try to extract from request
+    if not socket_number:
+        # Get the remote port from the request
+        socket_number = str(request.remote_addr) + ':' + str(request.environ.get('REMOTE_PORT', 'unknown'))
+    
+    registry.register_client(client_id, ip_address, socket_number)
     
     return jsonify({
         'message': 'Client registered successfully',
-        'client_id': client_id
+        'client_id': client_id,
+        'socket_number': socket_number
     }), 201
 
 

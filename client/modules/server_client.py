@@ -16,16 +16,18 @@ CHUNK_SIZE = 64 * 1024  # 64 KB
 class ServerClient:
     """Handles communication with the central server."""
     
-    def __init__(self, client_id: str, ip_address: str = "127.0.0.1"):
+    def __init__(self, client_id: str, ip_address: str = "127.0.0.1", socket_number: str = None):
         """
         Initialize the server client.
         
         Args:
             client_id: Unique identifier for this client
             ip_address: IP address of this client
+            socket_number: Optional socket number (host:port) that this client is listening on
         """
         self.client_id = client_id
         self.ip_address = ip_address
+        self.socket_number = socket_number
         self.heartbeat_thread = None
         self.heartbeat_active = False
         self.poll_thread = None
@@ -40,11 +42,15 @@ class ServerClient:
             bool: True if registration successful
         """
         try:
+            # Use the socket_number provided during initialization, or try to get it
+            socket_number = self.socket_number or self._get_socket_number()
+            
             response = requests.post(
                 f"{SERVER_URL}/register",
                 json={
                     "client_id": self.client_id,
-                    "ip_address": self.ip_address
+                    "ip_address": self.ip_address,
+                    "socket_number": socket_number
                 },
                 timeout=10
             )
@@ -59,6 +65,27 @@ class ServerClient:
         except Exception as e:
             print(f"✗ Registration error: {e}")
             return False
+    
+    def _get_socket_number(self) -> str:
+        """
+        Get the socket number from the client's listening socket.
+        This is used as fallback if socket_number wasn't provided.
+        
+        Returns:
+            str: Socket number in format 'host:port'
+        """
+        try:
+            import socket as sock
+            # Get a socket to extract local port information
+            s = sock.socket(sock.AF_INET, sock.SOCK_STREAM)
+            s.bind((self.ip_address, 0))
+            local_port = s.getsockname()[1]
+            s.close()
+            return f"{self.ip_address}:{local_port}"
+        except Exception as e:
+            # Fallback: return just IP if socket extraction fails
+            print(f"⚠ Could not get socket number: {e}")
+            return self.ip_address
     
     def start_heartbeat(self):
         """Start sending heartbeat signals to the server."""

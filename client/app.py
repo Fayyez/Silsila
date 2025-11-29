@@ -47,8 +47,12 @@ def register_client():
     if not client_id:
         return jsonify({'error': 'Client ID required'}), 400
     
-    # Create server client
-    server_client = ServerClient(client_id)
+    # Get the port from the request's server info
+    client_port = request.host.split(':')[1] if ':' in request.host else '5001'
+    socket_number = f"127.0.0.1:{client_port}"
+    
+    # Create server client with the socket number
+    server_client = ServerClient(client_id, socket_number=socket_number)
     
     # Register with server
     if server_client.register():
@@ -61,6 +65,7 @@ def register_client():
         return jsonify({
             'success': True,
             'client_id': client_id,
+            'socket_number': socket_number,
             'message': 'Connected to server'
         }), 200
     else:
