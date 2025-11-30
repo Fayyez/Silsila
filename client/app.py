@@ -36,6 +36,22 @@ def index():
     return render_template('home.html')
 
 
+@app.route('/assets/<path:filename>')
+def serve_assets(filename):
+    """Serve static assets like images."""
+    try:
+        assets_dir = os.path.join(os.path.dirname(__file__), 'assets')
+        file_path = os.path.join(assets_dir, filename)
+        if os.path.exists(file_path):
+            return send_file(file_path)
+        else:
+            print(f"Asset not found: {file_path}")
+            return "Asset not found", 404
+    except Exception as e:
+        print(f"Error serving asset {filename}: {e}")
+        return "Error serving asset", 500
+
+
 @app.route('/api/register', methods=['POST'])
 def register_client():
     """Register this client with the server."""
