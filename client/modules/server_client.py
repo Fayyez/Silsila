@@ -439,6 +439,36 @@ class ServerClient:
         except Exception as e:
             print(f"✗ Reject error: {e}")
             return False
+    
+    def check_rejections(self) -> list:
+        """
+        Check for any transfer rejections for this sender.
+        
+        Returns:
+            list: List of rejection notifications with token, filename, timestamp
+        """
+        try:
+            response = requests.get(
+                f"{SERVER_URL}/check_rejections/{self.client_id}",
+                timeout=10
+            )
+            
+            if response.status_code == 200:
+                data = response.json()
+                rejections = data.get('rejections', [])
+                
+                if rejections:
+                    print(f"⚠ {len(rejections)} transfer(s) rejected")
+                    for rejection in rejections:
+                        print(f"  - {rejection.get('filename')}: {rejection.get('token')[:8]}...")
+                
+                return rejections
+            else:
+                return []
+                
+        except Exception as e:
+            print(f"✗ Error checking rejections: {e}")
+            return []
 
 
 import os  # Import at module level for upload_file function

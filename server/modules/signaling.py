@@ -12,7 +12,12 @@ REQUEST_TIMEOUT_SECONDS = 300 # Request expires after 5 minutes
 # Dictionary to map recipient ID to their Condition object for fast signaling
 # Key: client_id (str)
 # Value: threading.Condition object
-RECIPIENT_CONDITIONS = {} 
+RECIPIENT_CONDITIONS = {}
+
+# Dictionary to store rejection notifications for senders
+# Key: sender_id (str)
+# Value: list of rejection tokens that the sender has not yet retrieved
+SENDER_REJECTIONS = {} 
 
 
 def create_transfer_request(sender_id: str, recipient_id: str, metadata: dict) -> str:
@@ -88,3 +93,36 @@ def delete_request(token: str):
     if token in TRANSFER_REQUESTS:
         del TRANSFER_REQUESTS[token]
         print(f"[SIGNAL] Transfer request deleted: {token}")
+
+
+def notify_sender_rejection(token: str) -> bool:
+    """Records a rejection notification for the sender."""
+    request_data = get_request_data(token)
+    if not request_data:
+        return False
+    
+    sender_id = request_data['sender_id']
+    filename = request_data['metadata'].get('filename', 'unknown')
+    
+    # Initialize sender's rejection list if needed
+    if sender_id not in SENDER_REJECTIONS:
+        SENDER_REJECTIONS[sender_id] = []
+    
+    # Add rejection notification
+    SENDER_REJECTIONS[sender_id].append({
+        'token': token,
+        'filename': filename,
+        'timestamp': time.time()
+    })
+    
+    print(f"[SIGNAL] Rejection notification recorded for {sender_id}: {filename}")
+    return True
+
+
+def get_sender_rejections(sender_id: str) -> list:
+    """Retrieves all pending rejection notifications for a sender."""
+    rejections = SENDER_REJECTIONS.get(sender_id, [])
+    # Clear the list after retrieval
+    if sender_id in SENDER_REJECTIONS:
+        SENDER_REJECTIONS[sender_id] = []
+    return rejections

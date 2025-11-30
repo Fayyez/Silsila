@@ -219,6 +219,16 @@ def get_pending_transfers():
     }), 200
 
 
+@app.route('/api/rejections', methods=['GET'])
+def get_rejections():
+    """Get list of rejected transfers for this sender."""
+    if not server_client:
+        return jsonify({'error': 'Not registered'}), 400
+    
+    rejections = server_client.check_rejections()
+    return jsonify({'rejections': rejections}), 200
+
+
 @app.route('/api/accept', methods=['POST'])
 def accept_transfer():
     """Accept an incoming transfer."""

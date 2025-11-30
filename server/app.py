@@ -287,10 +287,18 @@ def reject_transfer(token):
     # Update status to REJECTED
     signaling.update_request_status(token, 'REJECTED')
     
+    # Notify the sender about the rejection
+    sender_id = request_data['sender_id']
+    filename = request_data['metadata'].get('filename', 'unknown')
+    signaling.notify_sender_rejection(token)
+    
+    print(f"[TRANSFER] Transfer rejected by recipient - sender {sender_id}, file: {filename}")
+    
     return jsonify({
         'message': 'Transfer rejected',
         'token': token,
-        'status': 'REJECTED'
+        'status': 'REJECTED',
+        'sender_id': sender_id
     }), 200
 
 
@@ -309,6 +317,20 @@ def check_status(token):
         'status': request_data['status'],
         'recipient_id': request_data['recipient_id'],
         'sender_id': request_data['sender_id']
+    }), 200
+
+
+@app.route('/check_rejections/<sender_id>', methods=['GET'])
+def check_rejections(sender_id):
+    """
+    Allows sender to check for any rejection notifications.
+    Returns a list of rejected transfers.
+    """
+    rejections = signaling.get_sender_rejections(sender_id)
+    
+    return jsonify({
+        'rejections': rejections,
+        'count': len(rejections)
     }), 200
 
 

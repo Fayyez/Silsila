@@ -774,9 +774,26 @@
             setInterval(updatePending, 1000);
             setInterval(updateUploads, 500);
             setInterval(updateDownloads, 500);
+            setInterval(checkRejections, 3000);  // Check for rejections every 3 seconds
             
             // Fallback polling for client list every 5 seconds (in case SSE fails)
             setInterval(pollClientList, 5000);
+        }
+
+        async function checkRejections() {
+            try {
+                const response = await fetch('/api/rejections');
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.rejections && data.rejections.length > 0) {
+                        data.rejections.forEach(rejection => {
+                            showNotification(`❌ Transfer rejected: ${rejection.filename}`);
+                        });
+                    }
+                }
+            } catch (error) {
+                console.debug('Error checking rejections:', error);
+            }
         }
 
         async function pollClientList() {
