@@ -484,6 +484,7 @@
         }
 
         let clientListStreamEventSource = null;
+        const SERVER_URL = 'http://127.0.0.1:5000';
 
         function startClientListStream() {
             // Start listening to real-time client list updates via Server-Sent Events
@@ -496,8 +497,19 @@
                 clientListStreamEventSource.close();
             }
             
-            const streamUrl = `/api/clients_stream?client_id=${encodeURIComponent(clientId)}`;
+            const streamUrl = `${SERVER_URL}/clients_stream?client_id=${encodeURIComponent(clientId)}`;
             console.log('Starting SSE stream to:', streamUrl);
+            
+            // First, fetch the initial list to populate dropdown immediately
+            fetch(`${SERVER_URL}/clients?client_id=${encodeURIComponent(clientId)}`)
+                .then(response => response.json())
+                .then(data => {
+                    console.log('Initial client list fetched:', data);
+                    updateClientList(data);
+                })
+                .catch(error => {
+                    console.error('Failed to fetch initial client list:', error);
+                });
             
             clientListStreamEventSource = new EventSource(streamUrl);
             
@@ -509,6 +521,7 @@
                 console.log('Received SSE message:', event.data);
                 try {
                     const data = JSON.parse(event.data);
+                    console.log('Parsed client list update:', data);
                     updateClientList(data);
                 } catch (error) {
                     console.error('Error parsing client list update:', error, 'Raw data:', event.data);
@@ -557,7 +570,7 @@
             icon.classList.add('spinning');
 
             try {
-                const response = await fetch('/api/clients');
+                const response = await fetch(`${SERVER_URL}/clients`);
                 const data = await response.json();
                 updateClientList(data);
             } catch (error) {
@@ -770,7 +783,7 @@
             // Fallback polling mechanism - only fetch if SSE is not connected
             if (!clientListStreamEventSource || clientListStreamEventSource.readyState !== EventSource.OPEN) {
                 try {
-                    const response = await fetch('/api/clients');
+                    const response = await fetch(`${SERVER_URL}/clients`);
                     if (response.ok) {
                         const data = await response.json();
                         updateClientList(data);

@@ -17,6 +17,30 @@ SERVER_PORT = 5000
 
 
 # ============================================================================
+# CORS Support
+# ============================================================================
+
+@app.before_request
+def handle_preflight():
+    """Handle CORS preflight requests."""
+    if request.method == 'OPTIONS':
+        response = jsonify({'status': 'ok'})
+        response.headers.add('Access-Control-Allow-Origin', '*')
+        response.headers.add('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, DELETE')
+        response.headers.add('Access-Control-Allow-Headers', 'Content-Type')
+        return response, 200
+
+
+@app.after_request
+def add_cors_headers(response):
+    """Add CORS headers to all responses."""
+    response.headers['Access-Control-Allow-Origin'] = '*'
+    response.headers['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS, DELETE'
+    response.headers['Access-Control-Allow-Headers'] = 'Content-Type'
+    return response
+
+
+# ============================================================================
 # Phase 2.1: Client Registration
 # ============================================================================
 
