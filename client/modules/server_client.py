@@ -372,6 +372,13 @@ class ServerClient:
                         if self.transfer_callback:
                             self.transfer_callback(token, sender_id, metadata)
                 
+                elif response.status_code == 404:
+                    # Client no longer registered (likely re-registered with different ID)
+                    # Stop polling gracefully
+                    print(f"⚠ Client {self.client_id} no longer registered, stopping poll")
+                    self.poll_active = False
+                    break
+                    
             except Exception as e:
                 # Long-polling timeout is expected
                 if "timeout" not in str(e).lower():

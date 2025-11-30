@@ -225,6 +225,7 @@ def check_requests(client_id):
     """
     # Validate client exists
     if client_id not in registry.CLIENTS:
+        # Don't log 404s here - they're expected when a client re-registers with a new ID
         return jsonify({'error': 'Client not registered'}), 404
     
     # Wait for requests (long-polling with 10 second timeout)

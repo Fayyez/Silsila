@@ -97,7 +97,7 @@ def update_heartbeat(client_id: str) -> bool:
     if client_id in CLIENTS:
         CLIENTS[client_id]['last_seen'] = time.time()
         _print_registry()
-        _notify_subscribers()
+        # _notify_subscribers()
         return True
     return False
 

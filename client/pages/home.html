@@ -570,7 +570,7 @@
             icon.classList.add('spinning');
 
             try {
-                const response = await fetch(`${SERVER_URL}/clients`);
+                const response = await fetch(`${SERVER_URL}/clients?client_id=${encodeURIComponent(clientId)}`);
                 const data = await response.json();
                 updateClientList(data);
             } catch (error) {
