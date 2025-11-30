@@ -2,12 +2,47 @@ import time
 import base64
 import os
 import json
+import queue
+import threading
 
 # In-memory dictionary to store client status and metadata
 # Structure: { client_id: { 'ip_address': str, 'socket_number': str, 'last_seen': float, 'status': str } }
 CLIENTS = {}
 FILE_METADATA = {} 
 MAX_CLIENT_LIFETIME_SECONDS = 300 # 5 minutes
+
+# Subscription queues for real-time updates
+# Each client connecting to SSE gets a queue
+SUBSCRIBERS = []
+SUBSCRIBERS_LOCK = threading.Lock()
+
+def subscribe() -> queue.Queue:
+    """Subscribe to registry change notifications."""
+    q = queue.Queue()
+    with SUBSCRIBERS_LOCK:
+        SUBSCRIBERS.append(q)
+    return q
+
+def unsubscribe(q: queue.Queue):
+    """Unsubscribe from registry change notifications."""
+    with SUBSCRIBERS_LOCK:
+        if q in SUBSCRIBERS:
+            SUBSCRIBERS.remove(q)
+
+def _notify_subscribers():
+    """Notify all subscribers of a registry change."""
+    # Just put a simple notification - let each SSE connection compute its own client list
+    update = {
+        'type': 'registry_update',
+        'timestamp': time.time()
+    }
+    
+    with SUBSCRIBERS_LOCK:
+        for q in SUBSCRIBERS:
+            try:
+                q.put_nowait(update)
+            except queue.Full:
+                pass  # Skip if queue is full
 
 def _print_registry():
     """Helper function to print the current registry state."""
@@ -47,6 +82,7 @@ def register_client(client_id: str, ip_address: str, socket_number: str = None):
     }
     print(f"[REGISTRY] Client registered: {client_id} at {ip_address}:{socket_number}")
     _print_registry()
+    _notify_subscribers()
 
 def find_client_by_ip_and_socket(ip_address: str, socket_number: str) -> str | None:
     """Finds a client by IP address and socket number."""
@@ -61,6 +97,7 @@ def update_heartbeat(client_id: str) -> bool:
     if client_id in CLIENTS:
         CLIENTS[client_id]['last_seen'] = time.time()
         _print_registry()
+        _notify_subscribers()
         return True
     return False
 

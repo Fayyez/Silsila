@@ -471,8 +471,8 @@
                     
                     showNotification('Connected successfully!');
                     
-                    // Start polling
-                    refreshClients();
+                    // Start listening for real-time updates
+                    startClientListStream();
                     startPolling();
                 } else {
                     showNotification(data.error || 'Connection failed');
@@ -483,28 +483,83 @@
             }
         }
 
+        let clientListStreamEventSource = null;
+
+        function startClientListStream() {
+            // Start listening to real-time client list updates via Server-Sent Events
+            if (!clientId) {
+                console.error('Client ID not set, cannot start stream');
+                return;
+            }
+            
+            if (clientListStreamEventSource) {
+                clientListStreamEventSource.close();
+            }
+            
+            const streamUrl = `/api/clients_stream?client_id=${encodeURIComponent(clientId)}`;
+            console.log('Starting SSE stream to:', streamUrl);
+            
+            clientListStreamEventSource = new EventSource(streamUrl);
+            
+            clientListStreamEventSource.onopen = function(event) {
+                console.log('SSE connection opened for client:', clientId);
+            };
+            
+            clientListStreamEventSource.onmessage = function(event) {
+                console.log('Received SSE message:', event.data);
+                try {
+                    const data = JSON.parse(event.data);
+                    updateClientList(data);
+                } catch (error) {
+                    console.error('Error parsing client list update:', error, 'Raw data:', event.data);
+                }
+            };
+            
+            clientListStreamEventSource.onerror = function(error) {
+                console.error('SSE connection error:', error, 'ReadyState:', clientListStreamEventSource.readyState);
+                if (clientListStreamEventSource.readyState === EventSource.CLOSED) {
+                    console.log('SSE connection closed, reconnecting in 5 seconds...');
+                    setTimeout(() => {
+                        startClientListStream();
+                    }, 5000);
+                }
+            };
+        }
+
+        function updateClientList(data) {
+            // Update the recipient selection dropdown with new client list
+            const select = document.getElementById('recipientSelect');
+            const currentSelection = select.value;
+            
+            select.innerHTML = '';
+            
+            if (data.clients.length === 0) {
+                select.innerHTML = '<option value="">No clients online</option>';
+            } else {
+                select.innerHTML = '<option value="">Select a recipient</option>';
+                data.clients.forEach(client => {
+                    const option = document.createElement('option');
+                    option.value = client.id;
+                    option.textContent = `${client.id} (${client.status})`;
+                    select.appendChild(option);
+                });
+            }
+            
+            // Restore previous selection if it's still available
+            if (currentSelection && Array.from(select.options).some(opt => opt.value === currentSelection)) {
+                select.value = currentSelection;
+            }
+        }
+
         async function refreshClients() {
+            // Manual refresh button - triggers immediate update
             const icon = document.getElementById('refreshIcon');
             icon.classList.add('spinning');
 
             try {
                 const response = await fetch('/api/clients');
                 const data = await response.json();
-
-                const select = document.getElementById('recipientSelect');
-                select.innerHTML = '';
-
-                if (data.clients.length === 0) {
-                    select.innerHTML = '<option value="">No clients online</option>';
-                } else {
-                    select.innerHTML = '<option value="">Select a recipient</option>';
-                    data.clients.forEach(client => {
-                        const option = document.createElement('option');
-                        option.value = client.id;
-                        option.textContent = `${client.id} (${client.status})`;
-                        select.appendChild(option);
-                    });
-                }
+                updateClientList(data);
             } catch (error) {
                 console.error('Error fetching clients:', error);
             } finally {
@@ -706,6 +761,24 @@
             setInterval(updatePending, 1000);
             setInterval(updateUploads, 500);
             setInterval(updateDownloads, 500);
+            
+            // Fallback polling for client list every 5 seconds (in case SSE fails)
+            setInterval(pollClientList, 5000);
+        }
+
+        async function pollClientList() {
+            // Fallback polling mechanism - only fetch if SSE is not connected
+            if (!clientListStreamEventSource || clientListStreamEventSource.readyState !== EventSource.OPEN) {
+                try {
+                    const response = await fetch('/api/clients');
+                    if (response.ok) {
+                        const data = await response.json();
+                        updateClientList(data);
+                    }
+                } catch (error) {
+                    console.debug('Fallback poll error (expected if SSE is working):', error);
+                }
+            }
         }
 
         function formatBytes(bytes) {

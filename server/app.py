@@ -4,6 +4,7 @@ Implements signaling, client registry, and in-memory streaming conduits.
 """
 
 from flask import Flask, request, jsonify, Response, stream_with_context
+import json
 import time
 from modules import registry, signaling, streaming
 
@@ -89,6 +90,58 @@ def list_clients():
         'clients': active_clients,
         'count': len(active_clients)
     }), 200
+
+
+@app.route('/clients_stream', methods=['GET'])
+def clients_stream():
+    """
+    Server-Sent Events endpoint for real-time client list updates.
+    Streams updated client list whenever the registry changes.
+    """
+    current_client_id = request.args.get('client_id')
+    print(f"[SSE] Client stream started for: {current_client_id}")
+    
+    def generate_events():
+        """Generator function to stream events."""
+        # Subscribe to registry changes
+        subscriber_queue = registry.subscribe()
+        
+        try:
+            # Send initial state
+            active_clients = registry.get_active_clients(current_client_id)
+            print(f"[SSE] Sending initial state to {current_client_id}: {len(active_clients)} clients")
+            yield f"data: {json.dumps({'clients': active_clients, 'count': len(active_clients)})}\n\n"
+            
+            # Keep connection alive and send updates
+            while True:
+                try:
+                    # Wait for update (timeout after 30 seconds to keep connection alive)
+                    update = subscriber_queue.get(timeout=30)
+                    
+                    # Rebuild client list excluding current client
+                    active_clients = registry.get_active_clients(current_client_id)
+                    print(f"[SSE] Sending update to {current_client_id}: {len(active_clients)} clients")
+                    yield f"data: {json.dumps({'clients': active_clients, 'count': len(active_clients)})}\n\n"
+                    
+                except Exception as e:
+                    # Timeout occurred, send keep-alive comment
+                    yield ": keep-alive\n\n"
+                    
+        except GeneratorExit:
+            print(f"[SSE] Client stream closed for: {current_client_id}")
+        finally:
+            # Unsubscribe when connection closes
+            registry.unsubscribe(subscriber_queue)
+    
+    return Response(
+        stream_with_context(generate_events()),
+        mimetype='text/event-stream',
+        headers={
+            'Cache-Control': 'no-cache',
+            'X-Accel-Buffering': 'no',
+            'Connection': 'keep-alive'
+        }
+    )
 
 
 # ============================================================================
