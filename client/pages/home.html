@@ -1,0 +1,1604 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Silsila - Quantum-Safe File Sharing</title>
+    <script src="https://unpkg.com/framer-motion@11.0.8/dist/framer-motion.umd.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #4fd1a7;
+            --secondary: #5eb8d4;
+            --accent: #d470a2;
+            --success: #4fd1a7;
+            --danger: #ff4757;
+            --warning: #ffa726;
+            --dark: #1a1a1a;
+            --darker: #0d0d0d;
+            --card: rgba(26, 26, 26, 0.95);
+            --glass: rgba(255, 255, 255, 0.03);
+            --text: #ffffff;
+            --text-muted: #888888;
+            --border: rgba(255, 255, 255, 0.08);
+            --shadow: rgba(0, 0, 0, 0.8);
+            --neon-glow: 0 0 20px;
+        }
+
+        html, body {
+            height: 100%;
+            overflow-x: hidden;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #0a0a0a;
+            color: var(--text);
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                linear-gradient(45deg, #ff6b6b 0%, #4ecdc4 25%, #45b7d1 50%, #96ceb4 75%, #ffeaa7 100%);
+            background-size: 400% 400%;
+            animation: gradientFlow 15s ease infinite;
+            opacity: 0.1;
+            z-index: -2;
+        }
+
+        @keyframes gradientFlow {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        body::after {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                radial-gradient(circle at 25% 25%, rgba(255, 107, 107, 0.15) 0%, transparent 40%),
+                radial-gradient(circle at 75% 75%, rgba(78, 205, 196, 0.15) 0%, transparent 40%);
+            z-index: -1;
+        }
+
+        .container {
+            min-height: 100vh;
+            padding: 1rem;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Header Styles */
+        .header {
+            text-align: center;
+            padding: 2rem 0 3rem;
+            animation: fadeInDown 0.8s ease-out;
+        }
+
+        .logo-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .logo {
+            width: 70px;
+            height: 70px;
+            border-radius: 20px;
+            box-shadow: var(--neon-glow) var(--primary);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            border: 2px solid var(--primary);
+        }
+
+        .logo:hover {
+            transform: scale(1.15) rotate(10deg);
+            box-shadow: 0 0 40px var(--primary), 0 0 60px var(--secondary);
+            border-color: var(--secondary);
+        }
+
+        .main-title {
+            font-size: clamp(2rem, 5vw, 3.5rem);
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--primary), var(--secondary), var(--accent));
+            background-size: 300% 300%;
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: gradient-animation 4s ease-in-out infinite;
+            margin-bottom: 0.5rem;
+        }
+
+        .subtitle {
+            font-size: clamp(0.9rem, 2vw, 1.1rem);
+            color: var(--text-muted);
+            font-weight: 300;
+            opacity: 0.9;
+        }
+
+        @keyframes gradient-animation {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes slideInRight {
+            from {
+                opacity: 0;
+                transform: translateX(100px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        @keyframes slideInLeft {
+            from {
+                opacity: 0;
+                transform: translateX(-100px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        /* Card Styles */
+        .glass-card {
+            background: var(--card);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 2rem;
+            box-shadow: 0 20px 40px var(--shadow);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .glass-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(45deg, var(--primary), var(--secondary), var(--accent));
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            z-index: -1;
+        }
+
+        .glass-card:hover {
+            transform: translateY(-8px);
+            box-shadow: var(--neon-glow) var(--primary), 0 30px 60px var(--shadow);
+            border-color: var(--primary);
+        }
+
+        .glass-card:hover::before {
+            opacity: 0.1;
+        }
+
+        /* Login Card */
+        .login-wrapper {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .login-card {
+            max-width: 400px;
+            width: 100%;
+            animation: fadeInUp 0.8s ease-out 0.2s both;
+        }
+
+        .login-title {
+            font-size: 1.8rem;
+            font-weight: 700;
+            text-align: center;
+            margin-bottom: 2rem;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        /* Main Content */
+        .main-content {
+            display: none;
+            flex: 1;
+            animation: fadeIn 0.6s ease-out;
+        }
+
+        .main-content.active {
+            display: block;
+        }
+
+        /* User Info */
+        .user-info {
+            background: linear-gradient(135deg, var(--glass) 0%, rgba(79, 209, 167, 0.05) 100%);
+            backdrop-filter: blur(20px);
+            border: 2px solid var(--primary);
+            border-radius: 20px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            animation: slideInLeft 0.6s ease-out;
+            box-shadow: 
+                0 8px 32px rgba(0, 0, 0, 0.3),
+                0 0 10px rgba(79, 209, 167, 0.2);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .user-info::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, var(--primary), var(--secondary), var(--accent), var(--primary));
+            background-size: 200% 100%;
+            animation: borderGlow 3s linear infinite;
+        }
+
+        @keyframes borderGlow {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+
+        .user-info:hover {
+            border-color: var(--secondary);
+            box-shadow: 
+                0 12px 40px rgba(0, 0, 0, 0.4),
+                0 0 15px rgba(94, 184, 212, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .user-avatar {
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #000;
+            text-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+            box-shadow: 
+                0 8px 24px rgba(79, 209, 167, 0.2),
+                0 0 10px var(--primary),
+                inset 0 2px 10px rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .user-avatar:hover {
+            transform: scale(1.05) rotate(2deg);
+            box-shadow: 
+                0 12px 30px rgba(79, 209, 167, 0.3),
+                0 0 15px var(--primary),
+                inset 0 2px 15px rgba(255, 255, 255, 0.2);
+        }
+
+        .user-details {
+            flex: 1;
+        }
+
+        .user-details h3 {
+            font-size: 1.4rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            color: var(--text);
+            text-shadow: 0 0 10px var(--primary);
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            transition: all 0.3s ease;
+        }
+
+        .user-info:hover .user-details h3 {
+            text-shadow: 0 0 8px var(--secondary);
+            transform: translateX(3px);
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.25rem 0.75rem;
+            background: var(--success);
+            color: white;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: white;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        /* Grid Layout */
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        /* Card Headers */
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .card-title {
+            font-size: 1.3rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .card-icon {
+            font-size: 1.4rem;
+        }
+
+        /* Form Elements */
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .form-input,
+        .form-select {
+            width: 100%;
+            padding: 1rem;
+            background: var(--card);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            color: var(--text);
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .form-select {
+            background: linear-gradient(135deg, var(--card) 0%, rgba(79, 209, 167, 0.05) 100%);
+            color: var(--text);
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 1rem;
+            line-height: 1.5;
+            padding: 1rem 3rem 1rem 1rem;
+            min-height: 3.5rem;
+            box-shadow: 
+                0 4px 15px rgba(0, 0, 0, 0.3),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            appearance: none;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            position: relative;
+            background-image: none;
+        }
+
+        .form-select:hover {
+            border-color: var(--secondary);
+            box-shadow: 
+                0 0 15px rgba(94, 184, 212, 0.3),
+                0 6px 20px rgba(0, 0, 0, 0.4),
+                inset 0 1px 0 rgba(255, 255, 255, 0.15);
+            transform: translateY(-2px);
+            background: linear-gradient(135deg, var(--card) 0%, rgba(94, 184, 212, 0.08) 100%);
+        }
+
+        .form-select option {
+            background-color: #1a1a2e;
+            color: var(--text);
+            padding: 14px 16px;
+            border: none;
+            font-weight: 500;
+            font-size: 1rem;
+            line-height: 1.4;
+            transition: all 0.2s ease;
+        }
+
+        .form-select option:hover,
+        .form-select option:focus {
+            background-color: rgba(79, 209, 167, 0.2);
+            color: #fff;
+            font-weight: 600;
+        }
+
+        .form-select option:checked,
+        .form-select option:selected {
+            background-color: var(--primary);
+            color: #000;
+            font-weight: 700;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+        }
+
+        .form-select option:disabled {
+            background-color: var(--card);
+            color: #666;
+            cursor: not-allowed;
+            opacity: 0.5;
+        }
+
+        .form-select option[value=""] {
+            color: var(--text-muted);
+            font-style: italic;
+        }
+
+        /* Custom dropdown wrapper and arrow */
+        .select-wrapper {
+            position: relative;
+            display: block;
+        }
+
+        .select-wrapper::after {
+            content: '▼';
+            position: absolute;
+            right: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--primary);
+            font-size: 12px;
+            pointer-events: none;
+            transition: all 0.3s ease;
+            text-shadow: 0 0 10px var(--primary);
+        }
+
+        .select-wrapper:hover::after {
+            color: var(--secondary);
+            text-shadow: 0 0 15px var(--secondary);
+            transform: translateY(-50%) rotate(180deg);
+        }
+
+        .form-select:focus + .select-wrapper::after,
+        .select-wrapper:has(.form-select:focus)::after {
+            color: var(--accent);
+            text-shadow: 0 0 15px var(--accent);
+            transform: translateY(-50%) rotate(180deg) scale(1.2);
+        }
+
+        /* Loading state for select */
+        .form-select.loading {
+            background-image: linear-gradient(
+                90deg,
+                rgba(79, 209, 167, 0.1) 0%,
+                rgba(94, 184, 212, 0.1) 50%,
+                rgba(79, 209, 167, 0.1) 100%
+            );
+            background-size: 200% 100%;
+            animation: loadingShimmer 2s ease-in-out infinite;
+        }
+
+        @keyframes loadingShimmer {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+
+        /* Empty state styling */
+        .form-select:invalid {
+            color: var(--text-muted);
+        }
+
+        .form-select:valid {
+            color: var(--text);
+        }
+
+        .form-input:focus,
+        .form-select:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 
+                0 0 15px rgba(212, 112, 162, 0.4),
+                0 6px 20px rgba(0, 0, 0, 0.4),
+                inset 0 1px 0 rgba(255, 255, 255, 0.15);
+            transform: translateY(-2px) scale(1.01);
+            background: linear-gradient(135deg, var(--card) 0%, rgba(212, 112, 162, 0.05) 100%);
+        }
+
+        .form-input::placeholder {
+            color: var(--text-muted);
+        }
+
+        /* Enhanced File Input Styling */
+        .form-input[type="file"] {
+            position: relative;
+            background: var(--card);
+            border: 2px dashed var(--border);
+            border-radius: 16px;
+            padding: 2rem 1rem;
+            text-align: center;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .form-input[type="file"]:hover {
+            border-color: var(--primary);
+            background: rgba(79, 209, 167, 0.03);
+            box-shadow: var(--neon-glow) var(--primary);
+        }
+
+        .form-input[type="file"]:focus {
+            border-color: var(--primary);
+            background: rgba(79, 209, 167, 0.05);
+            box-shadow: var(--neon-glow) var(--primary);
+        }
+
+        .form-input[type="file"]::file-selector-button {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: #000;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-right: 1rem;
+            box-shadow: var(--neon-glow) var(--primary);
+        }
+
+        .form-input[type="file"]::file-selector-button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 25px var(--primary);
+        }
+
+        .form-input[type="file"]::-webkit-file-upload-button {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: #000;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-right: 1rem;
+            box-shadow: var(--neon-glow) var(--primary);
+        }
+
+        .form-input[type="file"]::-webkit-file-upload-button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 25px var(--primary);
+        }
+
+        /* Buttons */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            padding: 1rem 2rem;
+            border: none;
+            border-radius: 16px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .btn:hover::before {
+            left: 100%;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: #000;
+            font-weight: 700;
+            text-shadow: none;
+            box-shadow: var(--neon-glow) var(--primary);
+            border: 2px solid transparent;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-3px) scale(1.02);
+            box-shadow: var(--neon-glow) var(--primary), 0 0 40px var(--primary);
+            border-color: var(--primary);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, var(--success), #22c55e);
+            color: white;
+            box-shadow: 0 8px 24px rgba(74, 222, 128, 0.3);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, var(--danger), #ef4444);
+            color: white;
+            box-shadow: 0 8px 24px rgba(248, 113, 113, 0.3);
+        }
+
+        .btn-secondary {
+            background: var(--glass);
+            color: var(--text);
+            border: 1px solid var(--border);
+        }
+
+        .btn-small {
+            padding: 0.6rem 1.2rem;
+            font-size: 0.9rem;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        /* Send File Card */
+        .send-card {
+            animation: slideInLeft 0.6s ease-out 0.1s both;
+        }
+
+        /* Receive Card */
+        .receive-card {
+            animation: slideInRight 0.6s ease-out 0.2s both;
+            border: 2px solid var(--secondary);
+            background: linear-gradient(135deg, var(--glass) 0%, rgba(94, 184, 212, 0.05) 100%);
+            box-shadow: 
+                0 8px 32px rgba(0, 0, 0, 0.3),
+                0 0 10px rgba(94, 184, 212, 0.15);
+            transition: all 0.3s ease;
+        }
+
+        .receive-card:hover {
+            border-color: var(--accent);
+            box-shadow: 
+                0 12px 40px rgba(0, 0, 0, 0.4),
+                0 0 15px rgba(212, 112, 162, 0.2);
+            transform: translateY(-3px);
+        }
+
+        /* Transfer Items */
+        .transfer-section {
+            margin-top: 1.5rem;
+            padding: 1rem;
+            background: rgba(94, 184, 212, 0.03);
+            border-radius: 12px;
+            border: 1px solid rgba(94, 184, 212, 0.1);
+        }
+
+        .section-title {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--secondary);
+            margin-bottom: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            text-shadow: 0 0 5px var(--secondary);
+            position: relative;
+        }
+
+        .section-title::after {
+            content: '';
+            position: absolute;
+            bottom: -4px;
+            left: 0;
+            width: 60px;
+            height: 2px;
+            background: linear-gradient(90deg, var(--secondary), transparent);
+            box-shadow: 0 0 10px var(--secondary);
+        }
+
+        .transfer-item {
+            background: linear-gradient(135deg, var(--glass) 0%, rgba(79, 209, 167, 0.03) 100%);
+            backdrop-filter: blur(15px);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 1.2rem;
+            margin-bottom: 0.75rem;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .transfer-item::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(79, 209, 167, 0.05), transparent);
+            transition: left 0.5s;
+        }
+
+        .transfer-item:hover {
+            border-color: var(--primary);
+            transform: translateY(-2px);
+            box-shadow: 
+                0 8px 25px rgba(0, 0, 0, 0.2),
+                0 0 10px rgba(79, 209, 167, 0.15);
+        }
+
+        .transfer-item:hover::before {
+            left: 100%;
+        }
+
+        .transfer-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 1rem;
+        }
+
+        .file-name {
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+        }
+
+        .file-meta {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        .transfer-actions {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        /* Progress Bar */
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: var(--glass);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 0.75rem;
+            border: 1px solid var(--border);
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary), var(--accent));
+            background-size: 200% 100%;
+            animation: progress-animation 2s ease-in-out infinite;
+            transition: width 0.3s ease;
+        }
+
+        @keyframes progress-animation {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 3rem 1rem;
+            color: var(--text-muted);
+            background: linear-gradient(135deg, rgba(94, 184, 212, 0.03) 0%, rgba(212, 112, 162, 0.03) 100%);
+            border-radius: 16px;
+            border: 1px dashed var(--border);
+            transition: all 0.3s ease;
+        }
+
+        .empty-state:hover {
+            border-color: var(--secondary);
+            background: linear-gradient(135deg, rgba(94, 184, 212, 0.05) 0%, rgba(212, 112, 162, 0.05) 100%);
+            box-shadow: 0 0 10px rgba(94, 184, 212, 0.1);
+        }
+
+        .empty-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            opacity: 0.7;
+            filter: drop-shadow(0 0 5px rgba(94, 184, 212, 0.3));
+            animation: float 3s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .empty-state p {
+            font-weight: 500;
+            font-size: 1.1rem;
+            text-shadow: 0 0 3px rgba(94, 184, 212, 0.2);
+        }
+
+        /* Notification */
+        .notification {
+            position: fixed;
+            top: 2rem;
+            right: 2rem;
+            background: var(--card);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 1rem 1.5rem;
+            box-shadow: 0 20px 40px var(--shadow);
+            z-index: 1000;
+            transform: translateX(400px);
+            opacity: 0;
+            transition: all 0.3s ease;
+            min-width: 300px;
+        }
+
+        .notification.show {
+            transform: translateX(0);
+            opacity: 1;
+        }
+
+        /* Path Input */
+        .path-input {
+            display: none;
+            margin-top: 0.75rem;
+        }
+
+        .path-input.show {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .container {
+                padding: 0.5rem;
+            }
+            
+            .header {
+                padding: 1rem 0 2rem;
+            }
+            
+            .glass-card {
+                padding: 1.5rem;
+                border-radius: 20px;
+            }
+            
+            .grid {
+                grid-template-columns: 1fr;
+                gap: 1.5rem;
+            }
+            
+            .logo {
+                width: 50px;
+                height: 50px;
+            }
+            
+            .user-info {
+                flex-direction: column;
+                text-align: center;
+                gap: 0.75rem;
+            }
+            
+            .transfer-actions {
+                flex-direction: column;
+            }
+            
+            .btn {
+                justify-content: center;
+            }
+            
+            .notification {
+                left: 1rem;
+                right: 1rem;
+                top: 1rem;
+                min-width: auto;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding: 0.25rem;
+            }
+            
+            .glass-card {
+                padding: 1rem;
+                border-radius: 16px;
+            }
+            
+            .main-title {
+                font-size: 1.8rem;
+            }
+            
+            .transfer-header {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+        }
+
+        /* Loading Animation */
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Refresh Button */
+        .refresh-btn {
+            background: linear-gradient(135deg, var(--secondary), var(--accent));
+            backdrop-filter: blur(15px);
+            border: 1px solid var(--secondary);
+            color: #fff;
+            font-weight: 600;
+            font-size: 0.9rem;
+            padding: 0.75rem 1.5rem;
+            border-radius: 12px;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 
+                0 4px 15px rgba(0, 0, 0, 0.2),
+                0 0 10px rgba(94, 184, 212, 0.2);
+        }
+
+        .refresh-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .refresh-btn:hover {
+            background: linear-gradient(135deg, var(--accent), var(--primary));
+            border-color: var(--accent);
+            box-shadow: 
+                0 6px 20px rgba(0, 0, 0, 0.3),
+                0 0 15px rgba(212, 112, 162, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .refresh-btn:hover::before {
+            left: 100%;
+        }
+
+        .refresh-btn:active {
+            transform: translateY(0);
+        }
+
+        .refresh-icon {
+            transition: transform 0.3s ease;
+            filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.5));
+            margin-right: 0.5rem;
+        }
+
+        .refresh-icon.spinning {
+            animation: spin 1s linear infinite;
+        }
+
+        .refresh-btn:hover .refresh-icon {
+            transform: rotate(180deg);
+            filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.8));
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(135deg, var(--secondary), var(--accent));
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <div class="logo-container">
+                <img src="/assets/logo.png" alt="Silsila Logo" class="logo" onerror="this.style.display='none'">
+                <h1 class="main-title">SILSILA</h1>
+            </div>
+            <p class="subtitle">⚡ Next-Gen Quantum-Safe File Transfer • Ultra Secure • Lightning Fast</p>
+        </div>
+
+        <!-- Login Card -->
+        <div class="login-wrapper" id="loginWrapper">
+            <div class="glass-card login-card">
+                <h2 class="login-title">⚡ CONNECT TO NETWORK</h2>
+                <div class="form-group">
+                    <label class="form-label" for="clientId">Your Client ID</label>
+                    <input type="text" id="clientId" class="form-input" placeholder="Enter a unique ID (e.g., alice, bob)" autocomplete="off">
+                </div>
+                <button class="btn btn-primary" onclick="register()" style="width: 100%;">
+                    <span>⚡</span> INITIALIZE CONNECTION
+                </button>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content" id="mainContent">
+            <!-- User Info -->
+            <div class="user-info">
+                <div class="user-avatar" id="userAvatar">A</div>
+                <div class="user-details">
+                    <h3 id="userName">Client Name</h3>
+                    <div class="status-badge">
+                        <div class="status-dot"></div>
+                        Connected
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Grid -->
+            <div class="grid">
+                <!-- Send File Section -->
+                <div class="glass-card send-card">
+                    <div class="card-header">
+                        <h3 class="card-title">
+                            <span class="card-icon">📤</span>
+                            Send File
+                        </h3>
+                        <button class="btn btn-secondary btn-small refresh-btn" onclick="refreshClients()">
+                            <span class="refresh-icon" id="refreshIcon">🔄</span>
+                            Refresh
+                        </button>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label" for="recipientSelect">Select Recipient</label>
+                        <div class="select-wrapper">
+                            <select id="recipientSelect" class="form-select">
+                                <option value="">Loading...</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="fileInput">Choose File</label>
+                        <input type="file" id="fileInput" class="form-input">
+                    </div>
+
+                    <button class="btn btn-primary" onclick="sendFile()" style="width: 100%;">
+                        <span>⚡</span>
+                        TRANSMIT FILE
+                    </button>
+
+                    <!-- Active Uploads -->
+                    <div class="transfer-section" id="uploadsSection" style="display: none;">
+                        <h4 class="section-title">Active Uploads</h4>
+                        <div id="uploadsList"></div>
+                    </div>
+                </div>
+
+                <!-- Receive Files Section -->
+                <div class="glass-card receive-card">
+                    <div class="card-header">
+                        <h3 class="card-title">
+                            <span class="card-icon">📥</span>
+                            Incoming Files
+                        </h3>
+                        <div class="status-badge">
+                            <div class="status-dot"></div>
+                            Listening
+                        </div>
+                    </div>
+
+                    <div id="pendingList">
+                        <div class="empty-state">
+                            <div class="empty-icon">📭</div>
+                            <p>No pending transfers</p>
+                        </div>
+                    </div>
+
+                    <!-- Active Downloads -->
+                    <div class="transfer-section" id="downloadsSection" style="display: none;">
+                        <h4 class="section-title">Active Downloads</h4>
+                        <div id="downloadsList"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification -->
+    <div class="notification" id="notification">
+        <span id="notificationText"></span>
+    </div>
+
+    <script>
+        let clientId = null;
+
+        async function register() {
+            const id = document.getElementById('clientId').value.trim();
+            
+            if (!id) {
+                showNotification('⚠️ Please enter a client ID');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ client_id: id })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    clientId = id;
+                    document.getElementById('loginWrapper').style.display = 'none';
+                    document.getElementById('mainContent').classList.add('active');
+                    document.getElementById('userName').textContent = id;
+                    document.getElementById('userAvatar').textContent = id[0].toUpperCase();
+                    
+                    showNotification('✅ Connected successfully!');
+                    
+                    // Start listening for real-time updates
+                    startClientListStream();
+                    startPolling();
+                } else {
+                    showNotification('❌ ' + (data.error || 'Connection failed'));
+                }
+            } catch (error) {
+                showNotification('❌ Error connecting to server');
+                console.error(error);
+            }
+        }
+
+        let clientListStreamEventSource = null;
+        const SERVER_URL = 'http://127.0.0.1:5000';
+
+        function startClientListStream() {
+            if (!clientId) {
+                console.error('Client ID not set, cannot start stream');
+                return;
+            }
+            
+            if (clientListStreamEventSource) {
+                clientListStreamEventSource.close();
+            }
+            
+            const streamUrl = `${SERVER_URL}/clients_stream?client_id=${encodeURIComponent(clientId)}`;
+            console.log('Starting SSE stream to:', streamUrl);
+            
+            // First, fetch the initial list
+            fetch(`${SERVER_URL}/clients?client_id=${encodeURIComponent(clientId)}`)
+                .then(response => response.json())
+                .then(data => {
+                    console.log('Initial client list fetched:', data);
+                    updateClientList(data);
+                })
+                .catch(error => {
+                    console.error('Failed to fetch initial client list:', error);
+                });
+            
+            clientListStreamEventSource = new EventSource(streamUrl);
+            
+            clientListStreamEventSource.onopen = function(event) {
+                console.log('SSE connection opened for client:', clientId);
+            };
+            
+            clientListStreamEventSource.onmessage = function(event) {
+                console.log('Received SSE message:', event.data);
+                try {
+                    const data = JSON.parse(event.data);
+                    console.log('Parsed client list update:', data);
+                    updateClientList(data);
+                } catch (error) {
+                    console.error('Error parsing client list update:', error, 'Raw data:', event.data);
+                }
+            };
+            
+            clientListStreamEventSource.onerror = function(error) {
+                console.error('SSE connection error:', error);
+                if (clientListStreamEventSource.readyState === EventSource.CLOSED) {
+                    console.log('SSE connection closed, reconnecting in 5 seconds...');
+                    setTimeout(() => {
+                        startClientListStream();
+                    }, 5000);
+                }
+            };
+        }
+
+        function updateClientList(data) {
+            const select = document.getElementById('recipientSelect');
+            const currentSelection = select.value;
+            
+            select.innerHTML = '';
+            
+            if (data.clients.length === 0) {
+                select.innerHTML = '<option value="">No clients online</option>';
+            } else {
+                select.innerHTML = '<option value="">Select a recipient</option>';
+                data.clients.forEach(client => {
+                    const option = document.createElement('option');
+                    option.value = client.id;
+                    option.textContent = `${client.id} (${client.status})`;
+                    select.appendChild(option);
+                });
+            }
+            
+            if (currentSelection && Array.from(select.options).some(opt => opt.value === currentSelection)) {
+                select.value = currentSelection;
+            }
+        }
+
+        async function refreshClients() {
+            const icon = document.getElementById('refreshIcon');
+            const select = document.getElementById('recipientSelect');
+            
+            icon.classList.add('spinning');
+            select.classList.add('loading');
+            select.disabled = true;
+
+            try {
+                const response = await fetch(`${SERVER_URL}/clients?client_id=${encodeURIComponent(clientId)}`);
+                const data = await response.json();
+                updateClientList(data);
+                showNotification('✅ Recipients refreshed successfully');
+            } catch (error) {
+                console.error('Error fetching clients:', error);
+                showNotification('❌ Failed to refresh recipients');
+            } finally {
+                setTimeout(() => {
+                    icon.classList.remove('spinning');
+                    select.classList.remove('loading');
+                    select.disabled = false;
+                }, 500);
+            }
+        }
+
+        async function sendFile() {
+            const recipientId = document.getElementById('recipientSelect').value;
+            const fileInput = document.getElementById('fileInput');
+            const file = fileInput.files[0];
+
+            if (!recipientId) {
+                showNotification('⚠️ Please select a recipient');
+                return;
+            }
+
+            if (!file) {
+                showNotification('⚠️ Please select a file');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('recipient_id', recipientId);
+
+            try {
+                const response = await fetch('/api/send', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    showNotification(`🚀 Sending ${file.name} to ${recipientId}...`);
+                    fileInput.value = '';
+                } else {
+                    showNotification('❌ ' + (data.error || 'Failed to send file'));
+                }
+            } catch (error) {
+                showNotification('❌ Error sending file');
+                console.error(error);
+            }
+        }
+
+        async function acceptTransfer(token) {
+            const pathInput = document.getElementById(`path-${token}`);
+            const downloadPath = pathInput ? pathInput.value : '';
+
+            try {
+                const response = await fetch('/api/accept', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ token, download_path: downloadPath || undefined })
+                });
+
+                if (response.ok) {
+                    showNotification('📥 Download started...');
+                } else {
+                    showNotification('❌ Failed to accept transfer');
+                }
+            } catch (error) {
+                showNotification('❌ Error accepting transfer');
+                console.error(error);
+            }
+        }
+
+        async function rejectTransfer(token) {
+            try {
+                const response = await fetch('/api/reject', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ token })
+                });
+
+                if (response.ok) {
+                    showNotification('❌ Transfer rejected');
+                }
+            } catch (error) {
+                console.error(error);
+            }
+        }
+
+        function togglePathInput(token) {
+            const input = document.getElementById(`path-input-${token}`);
+            input.classList.toggle('show');
+        }
+
+        async function updatePending() {
+            try {
+                const response = await fetch('/api/pending');
+                const data = await response.json();
+
+                const list = document.getElementById('pendingList');
+
+                if (data.transfers.length === 0) {
+                    list.innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-icon">📭</div>
+                            <p>No pending transfers</p>
+                        </div>
+                    `;
+                } else {
+                    list.innerHTML = data.transfers.map(t => `
+                        <div class="transfer-item">
+                            <div class="transfer-header">
+                                <div>
+                                    <div class="file-name">📄 ${t.filename}</div>
+                                    <div class="file-meta">From: ${t.sender_id} • ${formatBytes(t.filesize)}</div>
+                                </div>
+                            </div>
+                            <div class="transfer-actions">
+                                <button class="btn btn-success btn-small" onclick="acceptTransfer('${t.token}')">
+                                    ✓ Accept
+                                </button>
+                                <button class="btn btn-danger btn-small" onclick="rejectTransfer('${t.token}')">
+                                    ✗ Reject
+                                </button>
+                                <button class="btn btn-secondary btn-small" onclick="togglePathInput('${t.token}')">
+                                    📁 Choose Location
+                                </button>
+                            </div>
+                            <div class="path-input" id="path-input-${t.token}">
+                                <input type="text" id="path-${t.token}" class="form-input" placeholder="Enter custom download path (optional)" style="margin-top: 0.5rem;">
+                            </div>
+                        </div>
+                    `).join('');
+                }
+            } catch (error) {
+                console.error('Error updating pending:', error);
+            }
+        }
+
+        async function updateUploads() {
+            try {
+                const response = await fetch('/api/uploads/status');
+                const data = await response.json();
+
+                const section = document.getElementById('uploadsSection');
+                const list = document.getElementById('uploadsList');
+
+                if (data.uploads.length === 0) {
+                    section.style.display = 'none';
+                } else {
+                    section.style.display = 'block';
+                    list.innerHTML = data.uploads.map(u => `
+                        <div class="transfer-item">
+                            <div class="file-name">📤 ${u.filename}</div>
+                            <div class="file-meta">${formatBytes(u.bytes_sent)} / ${formatBytes(u.total_bytes)}</div>
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: ${u.progress}%"></div>
+                            </div>
+                        </div>
+                    `).join('');
+                }
+            } catch (error) {
+                console.error('Error updating uploads:', error);
+            }
+        }
+
+        async function updateDownloads() {
+            try {
+                const response = await fetch('/api/downloads/status');
+                const data = await response.json();
+
+                const section = document.getElementById('downloadsSection');
+                const list = document.getElementById('downloadsList');
+
+                if (data.downloads.length === 0) {
+                    section.style.display = 'none';
+                } else {
+                    section.style.display = 'block';
+                    list.innerHTML = data.downloads.map(d => {
+                        let statusText = d.status === 'downloading' ? '⬇️ Downloading' : 
+                                       d.status === 'decrypting' ? '🔓 Decrypting' :
+                                       d.status === 'complete' ? '✅ Complete' : '❌ Error';
+                        
+                        return `
+                            <div class="transfer-item">
+                                <div class="file-name">📥 ${d.filename}</div>
+                                <div class="file-meta">${statusText} • ${formatBytes(d.bytes_received)} / ${formatBytes(d.total_bytes)}</div>
+                                ${d.status === 'downloading' ? `
+                                    <div class="progress-bar">
+                                        <div class="progress-fill" style="width: ${d.progress}%"></div>
+                                    </div>
+                                ` : ''}
+                            </div>
+                        `;
+                    }).join('');
+                }
+            } catch (error) {
+                console.error('Error updating downloads:', error);
+            }
+        }
+
+        function startPolling() {
+            setInterval(updatePending, 1000);
+            setInterval(updateUploads, 500);
+            setInterval(updateDownloads, 500);
+            setInterval(checkRejections, 3000);
+            setInterval(pollClientList, 5000);
+        }
+
+        async function checkRejections() {
+            try {
+                const response = await fetch('/api/rejections');
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.rejections && data.rejections.length > 0) {
+                        data.rejections.forEach(rejection => {
+                            showNotification(`❌ Transfer rejected: ${rejection.filename}`);
+                        });
+                    }
+                }
+            } catch (error) {
+                console.debug('Error checking rejections:', error);
+            }
+        }
+
+        async function pollClientList() {
+            if (!clientListStreamEventSource || clientListStreamEventSource.readyState !== EventSource.OPEN) {
+                try {
+                    const response = await fetch(`${SERVER_URL}/clients?client_id=${encodeURIComponent(clientId)}`);
+                    if (response.ok) {
+                        const data = await response.json();
+                        updateClientList(data);
+                    }
+                } catch (error) {
+                    console.debug('Fallback poll error:', error);
+                }
+            }
+        }
+
+        function formatBytes(bytes) {
+            if (bytes === 0) return '0 B';
+            const k = 1024;
+            const sizes = ['B', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        function showNotification(text) {
+            const notification = document.getElementById('notification');
+            document.getElementById('notificationText').textContent = text;
+            notification.classList.add('show');
+            
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 4000);
+        }
+
+        // Initialize tooltips and other interactive elements
+        document.addEventListener('DOMContentLoaded', function() {
+            // Add any additional initialization code here
+            console.log('Silsila UI initialized successfully');
+        });
+    </script>
+</body>
+</html>
+
