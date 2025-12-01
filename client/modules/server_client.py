@@ -6,6 +6,7 @@ Handles all interactions with the central server.
 import requests
 import threading
 import time
+import os
 from typing import Callable, Optional
 
 SERVER_URL = "http://127.0.0.1:5000"

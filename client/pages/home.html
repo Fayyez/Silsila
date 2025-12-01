@@ -1206,6 +1206,7 @@
 
     <script>
         let clientId = null;
+        let downloadedFiles = new Set();  // Track files that have been downloaded
 
         async function register() {
             const id = document.getElementById('clientId').value.trim();
@@ -1388,14 +1389,11 @@
         }
 
         async function acceptTransfer(token) {
-            const pathInput = document.getElementById(`path-${token}`);
-            const downloadPath = pathInput ? pathInput.value : '';
-
             try {
                 const response = await fetch('/api/accept', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ token, download_path: downloadPath || undefined })
+                    body: JSON.stringify({ token })
                 });
 
                 if (response.ok) {
@@ -1460,12 +1458,6 @@
                                 <button class="btn btn-danger btn-small" onclick="rejectTransfer('${t.token}')">
                                     ✗ Reject
                                 </button>
-                                <button class="btn btn-secondary btn-small" onclick="togglePathInput('${t.token}')">
-                                    📁 Choose Location
-                                </button>
-                            </div>
-                            <div class="path-input" id="path-input-${t.token}">
-                                <input type="text" id="path-${t.token}" class="form-input" placeholder="Enter custom download path (optional)" style="margin-top: 0.5rem;">
                             </div>
                         </div>
                     `).join('');
@@ -1519,6 +1511,14 @@
                                        d.status === 'decrypting' ? '🔓 Decrypting' :
                                        d.status === 'complete' ? '✅ Complete' : '❌ Error';
                         
+                        // Auto-download when complete (only once per file)
+                        if (d.status === 'complete' && d.download_filename && !downloadedFiles.has(d.download_filename)) {
+                            downloadedFiles.add(d.download_filename);
+                            setTimeout(() => {
+                                downloadCompletedFile(d.download_filename);
+                            }, 500);
+                        }
+                        
                         return `
                             <div class="transfer-item">
                                 <div class="file-name">📥 ${d.filename}</div>
@@ -1535,6 +1535,10 @@
             } catch (error) {
                 console.error('Error updating downloads:', error);
             }
+        }
+
+        function downloadCompletedFile(filename) {
+            window.location.href = `/api/download/${encodeURIComponent(filename)}`;
         }
 
         function startPolling() {

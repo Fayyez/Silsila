@@ -3,7 +3,7 @@ Flask web application for Quantum-Safe File Sharing client.
 Provides a modern web interface for secure file transfers.
 """
 
-from flask import Flask, render_template, request, jsonify, send_file
+from flask import Flask, render_template, request, jsonify, send_file, Response
 import os
 import threading
 import tempfile
@@ -193,7 +193,7 @@ def process_send_file(file_path: str, original_filename: str, recipient_id: str)
             'progress': 0
         }
         
-        success = server_client.upload_file(encrypted_path, token, progress_callback)
+        success = server_client.upload_file(token, encrypted_path, progress_callback)
         
         # Cleanup
         os.remove(file_path)
@@ -329,7 +329,7 @@ def process_receive_file(token: str, transfer_data: dict, download_path: str):
             'status': 'downloading'
         }
         
-        if not server_client.download_file(encrypted_path, token, progress_callback):
+        if not server_client.download_file(token, encrypted_path, progress_callback):
             print(f"✗ Download failed: {filename}")
             if token in active_downloads:
                 del active_downloads[token]
@@ -371,11 +371,12 @@ def process_receive_file(token: str, transfer_data: dict, download_path: str):
         if token in active_downloads:
             active_downloads[token]['status'] = 'complete'
             active_downloads[token]['output_path'] = output_path
+            active_downloads[token]['download_filename'] = os.path.basename(output_path)
             active_downloads[token]['hash_valid'] = result['hash_valid']
             
-            # Remove after a delay
+            # Keep record for longer so user can download
             def cleanup():
-                time.sleep(5)
+                time.sleep(30)  # Keep for 30 seconds instead of 5
                 if token in active_downloads:
                     del active_downloads[token]
             
@@ -414,6 +415,32 @@ def get_client_status():
         'active_uploads': len(active_uploads),
         'active_downloads': len(active_downloads)
     }), 200
+
+
+@app.route('/api/download/<filename>', methods=['GET'])
+def download_file_route(filename):
+    """Download a completed file to the browser."""
+    try:
+        # Prevent directory traversal attacks
+        if '..' in filename or '/' in filename or '\\' in filename:
+            return jsonify({'error': 'Invalid filename'}), 400
+        
+        file_path = os.path.join(downloads_dir, filename)
+        
+        # Check if file exists
+        if not os.path.exists(file_path):
+            return jsonify({'error': 'File not found'}), 404
+        
+        # Read file and return as response
+        with open(file_path, 'rb') as f:
+            file_data = f.read()
+        
+        response = Response(file_data, mimetype='application/octet-stream')
+        response.headers['Content-Disposition'] = f'attachment; filename="{filename}"'
+        return response
+    except Exception as e:
+        print(f"Error downloading file: {e}")
+        return jsonify({'error': str(e)}), 500
 
 
 if __name__ == '__main__':
