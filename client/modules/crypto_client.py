@@ -17,8 +17,7 @@ try:
     HAS_PQC = True
 except ImportError:
     HAS_PQC = False
-    print("⚠ Warning: liboqs not available. Using standard cryptography (AES-256-GCM)")
-    print("  For post-quantum support, install: pip install liboqs-python")
+    print("⚠ Warning: liboqs not available")
 
 CHUNK_SIZE = 64 * 1024  # 64 KB chunks
 
@@ -30,7 +29,7 @@ class QuantumSafeCrypto:
         """Initialize the crypto handler."""
         self.kem_algorithm = "ML-KEM-768" if HAS_PQC else None  # Post-quantum KEM
         if not HAS_PQC:
-            print("  ℹ Using AES-256-GCM with secure random keys (suitable for localhost prototype)")
+            print("  ℹ Using secure random keys")
         
     def generate_symmetric_key(self) -> tuple[bytes, bytes]:
         """
